@@ -1,4 +1,4 @@
-from extraction import volver_al_menu, try_opcion, try_archivo, casos_archivo, leer_datos
+from extraction import volver_al_menu, try_opcion, casos_archivo, leer_datos
 import os
 
 #Define la funcion localidad_diccionario()
@@ -616,35 +616,33 @@ def descargar_estadisticas(Casos_matriz):
     input("\nPresione enter para volver al menu: ")
 
 #Define la funcion opciones()
-def opciones(opcion):
+def opciones(opcion, csv_path):
     '''
     Ejecuta una funcion de acuerdo a la opcion que escogio el operador
     :param int opcion: el numero de la opcion que escoge el operador
     No retorna
     '''
-    if try_archivo():
+    Casos_matriz = casos_archivo()
 
-        Casos_matriz = casos_archivo()
+    #Condicionales de acuerdo a la opcion escogida, ejecuta funciones diferentes.
+    if opcion == 1:
+        leer_datos(Casos_matriz)
 
-        #Condicionales de acuerdo a la opcion escogida, ejecuta funciones diferentes.
-        if opcion == 1:
-            leer_datos(Casos_matriz)
+    elif opcion == 2: 
+        menu_localidades(Casos_matriz)
 
-        elif opcion == 2: 
-            menu_localidades(Casos_matriz)
+    elif opcion == 3:
+        rango_fecha(Casos_matriz)
 
-        elif opcion == 3:
-            rango_fecha(Casos_matriz)
+    elif opcion == 4:
+        mayor_contagio(Casos_matriz)
 
-        elif opcion == 4:
-            mayor_contagio(Casos_matriz)
+    elif opcion == 5:
+        menor_contagio(Casos_matriz)
 
-        elif opcion == 5:
-            menor_contagio(Casos_matriz)
+    elif opcion == 6:
+        descargar_estadisticas_caso(Casos_matriz)
 
-        elif opcion == 6:
-            descargar_estadisticas_caso(Casos_matriz)
-
-        elif opcion == 7:
-            descargar_estadisticas(Casos_matriz)
+    elif opcion == 7:
+        descargar_estadisticas(Casos_matriz)
 

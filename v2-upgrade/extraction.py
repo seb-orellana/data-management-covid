@@ -1,11 +1,10 @@
 import os
 
-#Define la funcion leer_datos()
 def leer_datos(Casos_matriz):
     '''
     Muestra cada linea del archivo "Bogota_covid19.csv" organizado por numero de caso.
     :param list Casos_matriz: Matriz con los casos.
-    No retorna a menos que sea para volver al menu.
+    Retorna para volver al menu.
     '''
 
     #Indica la opcion seleccionada.
@@ -52,11 +51,9 @@ def leer_datos(Casos_matriz):
     #Permite que el operador decida cuando volver al menu.
     input("\n\nPresione enter para volver al menu: ")
 
-#Define la funcion casos_archivo()
 def casos_archivo():
     '''
     Organiza los casos del archivo en una matriz.
-    No recibe parametros.
     :return list Casos_matriz: Matriz con los casos de covid19.
     '''
 
@@ -76,38 +73,11 @@ def casos_archivo():
 
     #Retorna la matriz con los casos.
     return Casos_matriz
-
-#Define la funcion try_archivo()
-def try_archivo():
-    '''
-    Prueba si el archivo "Bogota_covid19.csv" existe en el directorio.
-    No recibe parametros.
-    :return bool: True | False (De acuerdo al resultado).
-    '''
-
-    # Path to the directory where this .py file is located
-    current_dir = os.path.dirname(os.path.abspath(__file__))
-
-    # Build the path to the CSV file
-    csv_path = os.path.join(current_dir, "data", "Bogota_covid19.csv")
-
-    #Intenta abrir el archivo, si puede, retorna True, si no, retorna False.
-    try:
-        Archivo = open(csv_path, "r")
-        Archivo.close()
-        return True
-    
-    except:
-        #Le indica al operador que el archivo no existe.
-        print('\nEl archivo "Bogota_covid19.csv" no existe.')
-        input("\nPresione enter para salir.")
-        return False
     
 #Define la funcion volver_al_menu()
 def volver_al_menu():
     '''
     Permite volver al menu principal en caso que el operador quiera cambiar de opcion.
-    No recibe parametros
     :return bool: True or False de acuerdo al resultado.
     '''
 

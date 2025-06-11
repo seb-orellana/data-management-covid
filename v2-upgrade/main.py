@@ -1,19 +1,10 @@
 from functions import opciones
-from extraction import try_archivo, try_opcion
+from extraction import try_opcion
+from file_utils import get_data_path, check_file_exists
 
-#Define la funcion menu()
-def menu():
-    '''
-    Muestra el menu y espera una opcion int
-    Entra en un ciclo while que solo se rompe si la opcion esta dentro del menu
-    Si la opcion es 8, sale del programa
-    No recibe parametros
-    No retorna
-    '''
-
+def menu(csv_path):
     #El menu queda activo hasta que se de la opcion de salir.
     while True:
-        #Encabezado.
         print("\n\tMenu principal\n")
 
         #Opciones.
@@ -42,20 +33,13 @@ def menu():
             break
 
         #Llama la funcion opciones() con parametro opcion del operador.
-        opciones(opcion)
+        opciones(opcion, csv_path)
 
-#Define la funcion main()
 def main():
-    '''
-    Corre el programa, llama la funcion de "try_archivo"
-    Si la funcion try archivo retorna True, abre el menu
-    Si no, acaba el programa
-    No recibe parametros
-    No retorna
-    '''
-    #Prueba si el archivo existe, si existe, ejecuta una funcion.
-    if try_archivo():
-        menu()
+    csv_path = get_data_path()
+    print(csv_path)
+    if check_file_exists(csv_path):
+        menu(csv_path)
 
-#Ejecuta la funcion main()
-main()
+if __name__ == '__main__':
+    main()
