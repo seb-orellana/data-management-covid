@@ -5,6 +5,7 @@ from tkinter.ttk import Treeview
 import pandas as pd
 import tkinter as tk
 from tkinter import Toplevel, Scrollbar, ttk, messagebox
+from tkcalendar import DateEntry
 
 def leer_datos(data):
     """
@@ -34,16 +35,16 @@ def leer_datos(data):
     for _, row in data.iterrows():
         tree.insert("", "end", values=list(row))
 
-def localidad_diccionario(df_local):
+def localidad_diccionario(data_local):
     """
     Generates a stats dictionary for a given localidad's DataFrame slice.
     
-    :param DataFrame df_local: Filtered DataFrame for one localidad
+    :param DataFrame data_local: Filtered DataFrame for one localidad
     :return dict: Dictionary with statistics
     """
 
     diccionario_localidad = {
-        "Total contagiados": len(df_local),
+        "Total contagiados": len(data_local),
         "Sexo": {},
         "Tipo de caso": {},
         "Tipo de ubicacion": {},
@@ -56,21 +57,21 @@ def localidad_diccionario(df_local):
     }
 
     # Sexo
-    sexo_counts = df_local["Sexo"].value_counts()
+    sexo_counts = data_local["Sexo"].value_counts()
     diccionario_localidad["Sexo"]["Hombres"] = sexo_counts.get("M", 0)
     diccionario_localidad["Sexo"]["Mujeres"] = sexo_counts.get("F", 0)
 
     # Tipo de caso
-    diccionario_localidad["Tipo de caso"] = df_local["Tipo de caso"].value_counts().to_dict()
+    diccionario_localidad["Tipo de caso"] = data_local["Tipo de caso"].value_counts().to_dict()
 
     # Tipo de ubicacion
-    diccionario_localidad["Tipo de ubicacion"] = df_local["Ubicacion"].value_counts().to_dict()
+    diccionario_localidad["Tipo de ubicacion"] = data_local["Ubicacion"].value_counts().to_dict()
 
     # Estado
-    diccionario_localidad["Estado"] = df_local["Estado"].value_counts().to_dict()
+    diccionario_localidad["Estado"] = data_local["Estado"].value_counts().to_dict()
 
     # Edades (convert column to int first if not already)
-    edades = pd.to_numeric(df_local["Edad"], errors='coerce').dropna().astype(int)
+    edades = pd.to_numeric(data_local["Edad"], errors='coerce').dropna().astype(int)
     diccionario_localidad["Edades"]["0 a 13 anos"] = (edades <= 13).sum()
     diccionario_localidad["Edades"]["14 a 17 anos"] = ((edades > 13) & (edades <= 17)).sum()
     diccionario_localidad["Edades"]["18+ anos"] = (edades > 17).sum()
@@ -179,141 +180,48 @@ def menu_localidades_gui(data):
     ttk.Button(ventana, text="Aceptar", command=confirmar).pack(pady=10)
     ttk.Button(ventana, text="Cancelar", command=ventana.destroy).pack()
 
-#Define la funcion contagiados_rango_fecha()
-def contagiados_rango_fecha(inicio, final, localidades, matriz):
-    '''
-    Imprime los contagiados dentro de un rango de fecha organizado por localidad alfabeticamente.
-    :param int inicio: numero de la fecha inicial
-    :param int final: numero de la fecha final
-    :param list localidades: lista de localidades organizada alfabeticamente
-    :param list matriz: Matriz con los casos
-    No retorna
-    '''
-    #Variables con las fechas escogidas.
-    fecha_inicio = str(inicio)[6:] + "-" +str(inicio)[4:6] + "-" +str(inicio)[:4]
-    fecha_final = str(final)[6:] + "-" +str(final)[4:6] + "-" +str(final)[:4]
-    
-    #Inicializa el diccionario.
-    localidades_diccionario = {}
+def rango_fecha(data):
 
-    #Actualiza las llaves del diccionario.
-    for localidad in localidades:
-        localidades_diccionario[localidad] = 0
+    # Ensure the 'Fecha de diagnostico' column is datetime
+    data["Fecha de diagnostico"] = pd.to_datetime(data["Fecha de diagnostico"], errors='coerce', dayfirst=True)
 
-    #Actualiza el diccionario teniendo en cuenta las fechas limites.
-    for caso in matriz:
-        if caso[0] >= inicio and caso[0] <= final:
-            localidades_diccionario[caso[2]] += 1
+    # GUI
+    # Popup window
+    ventana = Toplevel()
+    ventana.title("Contagiados por Rango de Fecha")
+    ventana.geometry("400x600")
 
-    #Imprime el intervalo de fechas.
-    print("\nDatos entre {} y {}\n".format(fecha_inicio, fecha_final))
+    # Labels
+    start_label = ttk.Label(ventana, text="Fecha inicial:")
+    start_label.grid(row=0, column=0, sticky=tk.W)
+    end_label = ttk.Label(ventana, text="Fecha final:")
+    end_label.grid(row=1, column=0, sticky=tk.W)
 
-    #Imprime el encabezado.
-    print("{:<20}| contagiados\n".format("localidad"))
-    
-    #Imprime la localidad y los contagios dentro de la fecha.
-    for localidad in localidades_diccionario.keys():
-        print("{:<20}: {}".format(localidad, localidades_diccionario[localidad]))
+    # Date Pickers
+    start_date = DateEntry(ventana, date_pattern='dd-mm-yyyy')
+    start_date.grid(row=0, column=1, padx=5)
+    end_date = DateEntry(ventana, date_pattern='dd-mm-yyyy')
+    end_date.grid(row=1, column=1, padx=5)
 
-    #Permite que el operador decida cuando volver al menu.
-    input("\nPresione enter para volver al menu: ")
+    # Result Box
+    result_box = tk.Text(ventana, height=30, width=50)
+    result_box.grid(row=3, column=0, columnspan=2, pady=10)
 
-#Define la funcion rango_fecha()
-def rango_fecha(Casos_matriz):
-    '''
-    Organiza el archivo por fecha de manera ascendente y ejecuta una funcion con parametros del operador
-    :param list Casos_matriz: Matriz con los casos.
-    No retorna a menos que sea para volver al menu.
-    '''
-    #Indica la opcion seleccionada..
-    print("\nEscogio la opcion de ver contagiados dentro de un rango de fechas.")
-
-    #Permite volver al menu principal.
-    if volver_al_menu():
-        return
-
-    #Elimina la primera linea de la matriz.
-    del Casos_matriz[0]
-
-    #Establece las localidades y las organiza alfabeticamente.
-    localidades = list(set([caso[2] for caso in Casos_matriz]))
-    localidades.sort()
+    # Function to filter and display results
+    def show_results():
+        ini = pd.to_datetime(start_date.get(), format='%d-%m-%Y')
+        fin = pd.to_datetime(end_date.get(), format='%d-%m-%Y')
+        filtered = data[(data['Fecha de diagnostico'] >= ini) & (data['Fecha de diagnostico'] <= fin)]
+        counts = filtered['Localidad de residencia'].value_counts().sort_index()
         
-    #Organiza los casos por fecha.
-    Casos_matriz = organizar_por_fecha(Casos_matriz)
+        result_box.delete('1.0', tk.END)
+        result_box.insert(tk.END, f"Datos entre {ini.strftime('%d-%m-%Y')} y {fin.strftime('%d-%m-%Y')}\n\n")
+        for localidad, count in counts.items():
+            result_box.insert(tk.END, f"{localidad:<20}: {count}\n")
 
-    #Establece las fechas limites posibles.
-    fecha_limite_inicio = str(Casos_matriz[0][0])[6:] + '-' + str(Casos_matriz[0][0])[4:6] + '-' + str(Casos_matriz[0][0])[:4]
-    fecha_limite_final = str(Casos_matriz[len(Casos_matriz) - 1][0])[6:] + '-' + str(Casos_matriz[len(Casos_matriz) - 1][0])[4:6] + '-' + str(Casos_matriz[len(Casos_matriz) - 1][0])[:4]
-
-    #Opcion del operador como parametro para una funcion.
-    fecha_inicio = input("\nEscriba la fecha inicial en el formato dd-mm-aaaa (incluya los guiones)(ejemplo: 06-03-2020)\nEntre los intervalos {} y {}: ".format(fecha_limite_inicio, fecha_limite_final))
-    fecha_inicio = try_fecha(fecha_inicio)
-
-    #Analiza si la fecha es valida, si no, pide otra fecha.
-    while not fecha_inicio or fecha_inicio < Casos_matriz[0][0] or fecha_inicio > Casos_matriz[len(Casos_matriz) - 1][0]:
-        print("\nLa fecha inicial no es valida, intente entre los intervalos {} y {}.".format(fecha_limite_inicio, fecha_limite_final))
-        fecha_inicio = input("\nEscriba la fecha inicial en el formato dd-mm-aaaa (incluya los guiones)(ejemplo: 06-03-2020): ")
-        fecha_inicio = try_fecha(fecha_inicio)
-
-    #Actualiza el primer limite de fechas que se puede acceder.
-    fecha_limite_inicio = str(fecha_inicio)[6:] + "-" +str(fecha_inicio)[4:6] + "-" +str(fecha_inicio)[:4]
-
-    #Opcion del operador como parametro para una funcion.
-    fecha_final = input("\nEscriba la fecha final en el formato dd-mm-aaaa (incluya los guiones)(ejemplo: 03-06-2020)\nEntre los intervalos {} y {}: ".format(fecha_limite_inicio, fecha_limite_final))
-    fecha_final = try_fecha(fecha_final)
-
-    #Analiza si la fecha es valida, si no, pide otra fecha.
-    while not fecha_final or fecha_final < fecha_inicio or fecha_final > Casos_matriz[len(Casos_matriz) - 1][0]:
-        print("\nLa fecha final no es valida, intente entre los intervalos {} y {}.".format(fecha_limite_inicio, fecha_limite_final))
-        fecha_final = input("\nEscriba la fecha final en el formato dd-mm-aaaa (incluya los guiones)(ejemplo: 03-06-2020): ")
-        fecha_final = try_fecha(fecha_final)
-
-    #Ejecuta una funcion con una fecha de inicio y una fecha final, las localidades y una matriz con los casos.
-    contagiados_rango_fecha(fecha_inicio, fecha_final, localidades, Casos_matriz)
-
-#Define la funcion try_fecha()
-def try_fecha(fecha):
-    '''
-    Comprueba si la fecha esta en el formato indicado
-    :param str fecha: fecha escogida por el operador
-    :return bool or int: retorna False o un int dependiendo del resultado
-    '''
-    #Separa la fecha en una lista, la convierte a un numero comparable y lo retorna. Si no puede, retorna False.
-    try:
-        fecha = fecha.split("-")
-        fecha = int(fecha[0]) + int(fecha[1])*100 + int(fecha[2])*10000
-        return fecha
-
-    except:
-        return False
-
-#Define la funcion organizar_por_fecha()
-def organizar_por_fecha(matriz):
-    '''
-    Organiza los casos por fecha de manera ascendente
-    :param list matriz: Casos
-    :return list matriz: Casos organizados por fecha ascendentemente 
-    '''
-
-    #Separa la fecha de "dd/mm/aaaa" y los pasa a [dd, mm, aaaa].
-    for caso in range(len(matriz)):
-        matriz[caso][0] = matriz[caso][0].split("/")
-
-    #Asigna un numero a cada fecha que asciende con la fecha. Ej: 20/05/2020 pasa a ser 20200520 y 21/06/2021 pasa a ser 20210621.
-    for caso in range(len(matriz)):
-        matriz[caso][0] = int(matriz[caso][0][0]) + int(matriz[caso][0][1])*100 + int(matriz[caso][0][2])*10000
-
-    #Ordena por fecha de manera ascendente.
-    for maximo in range(len(matriz) - 1):
-        caso = 0
-        while caso < (len(matriz) - 1 - maximo) and matriz[caso][0] > matriz[caso + 1][0]:
-            matriz[caso], matriz[caso + 1] = matriz[caso + 1], matriz[caso]
-            
-            caso +=1
-
-    #Retorna la matriz.
-    return matriz
+    # Button
+    btn = ttk.Button(ventana, text="Mostrar resultados", command=show_results)
+    btn.grid(row=2, column=0, columnspan=2, pady=5)
 
 #Define la funcion mayor_contagio()
 def mayor_contagio(Casos_matriz):
@@ -648,7 +556,7 @@ def opciones(opcion, csv_path):
         menu_localidades_gui(data)
 
     elif opcion == 3:
-        rango_fecha(Casos_matriz)
+        rango_fecha(data)
 
     elif opcion == 4:
         mayor_contagio(Casos_matriz)
