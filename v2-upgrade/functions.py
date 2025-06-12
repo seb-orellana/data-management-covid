@@ -1,9 +1,10 @@
 from extraction import volver_al_menu, try_opcion, casos_archivo
 import os
 import csv
-from tkinter import Toplevel, Scrollbar
 from tkinter.ttk import Treeview
 import pandas as pd
+import tkinter as tk
+from tkinter import Toplevel, Scrollbar, ttk, messagebox
 
 def leer_datos(data):
     """
@@ -33,171 +34,150 @@ def leer_datos(data):
     for _, row in data.iterrows():
         tree.insert("", "end", values=list(row))
 
-#Define la funcion localidad_diccionario()
-def localidad_diccionario(Casos):
-    '''
-    Asigna llaves y valores a un diccionario de acuerdo a los datos
-    :param list Casos: Casos de la localidad 
-    :return dic diccionario_localidad: informacion de la localidad 
-    '''
+def localidad_diccionario(df_local):
+    """
+    Generates a stats dictionary for a given localidad's DataFrame slice.
+    
+    :param DataFrame df_local: Filtered DataFrame for one localidad
+    :return dict: Dictionary with statistics
+    """
 
-    #Inicializa un diccionario
-    diccionario_localidad = {"Total contagiados": 0, "Sexo": {"Hombres": 0, "Mujeres": 0}, "Tipo de caso": {}, "Tipo de ubicacion": {}, "Edades": {"0 a 13 anos": 0, "14 a 17 anos": 0, "18+ anos": 0}, "Estado": {}}
+    diccionario_localidad = {
+        "Total contagiados": len(df_local),
+        "Sexo": {},
+        "Tipo de caso": {},
+        "Tipo de ubicacion": {},
+        "Edades": {
+            "0 a 13 anos": 0,
+            "14 a 17 anos": 0,
+            "18+ anos": 0
+        },
+        "Estado": {}
+    }
 
-    #Actualiza el diccionario
-    for caso in Casos:
-        diccionario_localidad["Total contagiados"] += 1
+    # Sexo
+    sexo_counts = df_local["Sexo"].value_counts()
+    diccionario_localidad["Sexo"]["Hombres"] = sexo_counts.get("M", 0)
+    diccionario_localidad["Sexo"]["Mujeres"] = sexo_counts.get("F", 0)
 
-        if caso[1] == "M":
-            diccionario_localidad["Sexo"]["Hombres"] += 1
-        
-        elif caso[1] == "F":
-            diccionario_localidad["Sexo"]["Mujeres"] += 1
+    # Tipo de caso
+    diccionario_localidad["Tipo de caso"] = df_local["Tipo de caso"].value_counts().to_dict()
 
-        if caso[2] not in diccionario_localidad["Tipo de caso"]:
-            diccionario_localidad["Tipo de caso"][caso[2]] = 1
+    # Tipo de ubicacion
+    diccionario_localidad["Tipo de ubicacion"] = df_local["Ubicacion"].value_counts().to_dict()
 
-        else:
-            diccionario_localidad["Tipo de caso"][caso[2]] += 1
+    # Estado
+    diccionario_localidad["Estado"] = df_local["Estado"].value_counts().to_dict()
 
-        if caso[3] not in diccionario_localidad["Tipo de ubicacion"]:
-            diccionario_localidad["Tipo de ubicacion"][caso[3]] = 1
+    # Edades (convert column to int first if not already)
+    edades = pd.to_numeric(df_local["Edad"], errors='coerce').dropna().astype(int)
+    diccionario_localidad["Edades"]["0 a 13 anos"] = (edades <= 13).sum()
+    diccionario_localidad["Edades"]["14 a 17 anos"] = ((edades > 13) & (edades <= 17)).sum()
+    diccionario_localidad["Edades"]["18+ anos"] = (edades > 17).sum()
 
-        else:
-            diccionario_localidad["Tipo de ubicacion"][caso[3]] += 1
-
-        if int(caso[0]) <= 13:
-            diccionario_localidad["Edades"]["0 a 13 anos"] +=1
-
-        elif int(caso[0]) <=17:
-            diccionario_localidad["Edades"]["14 a 17 anos"] +=1
-
-        else:
-            diccionario_localidad["Edades"]["18+ anos"] +=1
-
-        if caso[4] not in diccionario_localidad["Estado"]:
-            diccionario_localidad["Estado"][caso[4]] = 1
-
-        else:
-            diccionario_localidad["Estado"][caso[4]] += 1
-
-    #Retorna el diccionario actualizado.
     return diccionario_localidad
 
-#Define la funcion estadisticas_localidad()
-def estadisticas_localidad(localidad, Casos_generales):
-    '''
-    imprime estadisticas de la localidad escogida
-    :param str localidad: localidad escogida
-    :param list Casos_generales: matriz con todos los casos
-    no retorna
-    '''
+def estadisticas_localidad(localidad, data):
+    """
+    GUI version: shows stats for a selected localidad.
+    """
 
-    #Indica la opcion seleccionada
-    print("\nLa localidad que escogio fue:", localidad)
+    # Filter the DataFrame
+    data_local = data[data["Localidad de residencia"] == localidad]
+    print("Filtered")
 
-    #Inicializa una variable y le agrega solo los casos dentro de la localidad especifica.
-    Casos = []
-    for caso in Casos_generales:
-        if caso[2] == localidad:
-            Casos.append(caso[3:])
-
-    #Crea un diccionario con una funcion que recibe los casos de la localidad como parametro.
-    diccionario_localidad = localidad_diccionario(Casos)
-
-    #Imprime encabezado.
-    print("\n\tMenu de localidad\n")
+    if data_local.empty:
+        messagebox.showinfo("Sin datos", f"No hay datos para la localidad: {localidad}")
+        return
     
-    #Imprime las opciones disponibles.
-    n_llave = 0
-    for llave in diccionario_localidad.keys():
-        n_llave += 1
-        print(str(n_llave) + ". " + llave)
-        
-    #Opcion del operador.
-    opcion = input("\nSelecciona la estadistica que desea visualizar (Escriba el numero correspondiente): ")
+    # Get the stats from your helper function
+    stats_dict = localidad_diccionario(data_local)
 
-    #Verifica que la opcion sea valida.
-    while not try_opcion(opcion) or int(opcion) < 1 or int(opcion) > n_llave:
-        print("\nOpcion no valida, vuelva a intentar.")
-        opcion = input("\nSelecciona la estadistica que desea visualizar (Escriba el numero correspondiente): ")
+    # Define available keys
+    opciones = [
+        "Total contagiados",
+        "Sexo",
+        "Tipo de caso",
+        "Tipo de ubicacion",
+        "Edades",
+        "Estado"
+    ]
 
-    #Convierte la opcion a int.
-    opcion = int(opcion)
-    print()
+    # Create window
+    ventana = Toplevel()
+    ventana.title(f"Estadísticas de {localidad}")
+    ventana.geometry("450x400")
 
-    #Impre las estadisticas de acuerdo a la opcion escogida.
-    if opcion == 1:
-        print("Total contagiados en {}: {}".format(localidad, diccionario_localidad["Total contagiados"]))
+    label = ttk.Label(ventana, text=f"Estadísticas para: {localidad}", font=("Segoe UI", 12, "bold"))
+    label.pack(pady=10)
 
-    elif opcion == 2:
-        print("Hombres contagiados en {}: {}".format(localidad, diccionario_localidad["Sexo"]["Hombres"]))
-        print("Mujeres contagiadas en {}: {}".format(localidad, diccionario_localidad["Sexo"]["Mujeres"]))
+    # Dropdown menu
+    seleccion = tk.StringVar()
+    dropdown = ttk.Combobox(ventana, textvariable=seleccion, values=opciones, state="readonly")
+    dropdown.pack(pady=5)
+    dropdown.current(0)
 
-    elif opcion == 3:
-        print("Tipo de caso\tFrecuencia\n")
-        for llave in diccionario_localidad["Tipo de caso"].keys():
-            print("{:<20} {}".format(llave, diccionario_localidad["Tipo de caso"][llave]))
+    # Text output
+    output = tk.Text(ventana, height=15, width=50, wrap="word", font=("Courier New", 10))
+    output.pack(pady=10)
 
-    elif opcion == 4:
-        print("Tipo de ubicacion\t\t\tFrecuencia\n")
-        for llave in diccionario_localidad["Tipo de ubicacion"].keys():
-            print("{:<40} {}".format(llave, diccionario_localidad["Tipo de ubicacion"][llave]))
+    def mostrar_estadistica():
+        selected = seleccion.get()
+        output.delete(1.0, tk.END)
 
-    elif opcion == 5:
-        print("Edades\t\tFrecuencia\n")
-        for llave in diccionario_localidad["Edades"].keys():
-            print("{:<20} {}".format(llave, diccionario_localidad["Edades"][llave])) 
+        if selected == "Total contagiados":
+            output.insert(tk.END, f"Total contagiados en {localidad}: {stats_dict['Total contagiados']}")
+        elif selected == "Sexo":
+            output.insert(tk.END, f"Hombres: {stats_dict['Sexo'].get('Hombres', 0)}\n")
+            output.insert(tk.END, f"Mujeres: {stats_dict['Sexo'].get('Mujeres', 0)}")
+        elif selected in stats_dict:
+            output.insert(tk.END, f"{selected}\n\n")
+            for k, v in stats_dict[selected].items():
+                output.insert(tk.END, f"{k:<30} {v}\n")
+        else:
+            output.insert(tk.END, "Estadística no disponible.")
 
-    else:        
-        print("Estado\t\t\t\t\tFrecuencia\n")
-        for llave in diccionario_localidad["Estado"].keys():
-            print("{:<40} {}".format(llave, diccionario_localidad["Estado"][llave]))
+    ttk.Button(ventana, text="Mostrar", command=mostrar_estadistica).pack()
+    ttk.Button(ventana, text="Cerrar", command=ventana.destroy).pack(pady=5)
 
-    #Permite que el operador decida cuando volver al menu.
-    input("\nPresione enter para volver al menu: ")
-
-#Define la funcion menu_localidades()
-def menu_localidades(Casos_matriz):
-    '''
-    Imprime un menu de las localidades disponibles en el archivo "Bogota_covid19.csv"
-    Espera un input, si este esta dentro de las localidades ejecuta la funcion estadisticas_localidad(localidad)
-    :param list Casos_matriz: Matriz con los casos.
-    No retorna a menos que sea para volver al menu.
-    '''
-
-    #Indica la opcion seleccionada.
-    print("\nEscogio la opcion de ver estadisticas por localidad.")
-
-    #Permite volver al menu principal.
-    if volver_al_menu():
+def menu_localidades_gui(data):
+    """
+    Opens a GUI window showing all localidades to choose from.
+    Calls estadisticas_localidad(localidad, data) with selection.
+    """
+    # Get unique localidades
+    if "Localidad de residencia" not in data.columns:
+        messagebox.showerror("Error", "La columna 'Localidad' no se encuentra en el archivo.")
         return
 
-    #Elimina la primera linea.
-    del Casos_matriz[0]
-        
-    #Crea un conjunto con las localidades posibles despues lo pasa a lista y lo ordena alfabeticamente.
-    localidades_conjunto = set([caso[2] for caso in Casos_matriz])
-    localidades_lista = [localidad for localidad in localidades_conjunto]
-    localidades_lista.sort()
+    localidades = sorted(data["Localidad de residencia"].dropna().unique())
 
-    #Imprime encabezado.
-    print("\n\tMenu de localidades\n")
+    # Popup window
+    ventana = Toplevel()
+    ventana.title("Seleccionar localidad")
+    ventana.geometry("300x200")
 
-    #Imprime el menu con un numero y la localidad, el menu es tan largo como la cantidad de localidades disponibles.
-    for localidad in range(len(localidades_lista)):
-        print("{:>2}. {}".format(localidad + 1 , localidades_lista[localidad]))
+    label = ttk.Label(ventana, text="Seleccione una localidad:", font=("Segoe UI", 12))
+    label.pack(pady=10)
 
-    #Opcion del operador.
-    localidad = input("\nEscoga la localidad que desea ver (Escriba el numero correspondiente): ")
+    selected = tk.StringVar()
+    combobox = ttk.Combobox(ventana, textvariable=selected, values=localidades, state="readonly")
+    combobox.pack(pady=5)
+    combobox.current(0)
 
-    #Se asegura que la localidad escogida exista.
-    while not try_opcion(localidad) or int(localidad) < 1 or int(localidad) > len(localidades_lista):
-        print("\nLa localidad que escogio no existe, intente de nuevo.\n")
-        localidad = input("Escoga la localidad que desea ver (Escriba el numero correspondiente): ")
+    def confirmar():
+        localidad = selected.get()
+        if localidad:
+            try:
+                estadisticas_localidad(localidad, data)
+                ventana.destroy()
+            except Exception as e:
+                messagebox.showerror("Error", f"No se pudo ejecutar la función:\n{e}")
+        else:
+            messagebox.showwarning("Aviso", "Debe seleccionar una localidad.")
 
-    #Ejecuta una funcion que tiene de parametros la opcion del operador y los casos.
-    estadisticas_localidad(localidades_lista[int(localidad)-1], Casos_matriz)
+    ttk.Button(ventana, text="Aceptar", command=confirmar).pack(pady=10)
+    ttk.Button(ventana, text="Cancelar", command=ventana.destroy).pack()
 
 #Define la funcion contagiados_rango_fecha()
 def contagiados_rango_fecha(inicio, final, localidades, matriz):
@@ -665,7 +645,7 @@ def opciones(opcion, csv_path):
         leer_datos(data)
 
     elif opcion == 2: 
-        menu_localidades(Casos_matriz)
+        menu_localidades_gui(data)
 
     elif opcion == 3:
         rango_fecha(Casos_matriz)
@@ -681,4 +661,3 @@ def opciones(opcion, csv_path):
 
     elif opcion == 7:
         descargar_estadisticas(Casos_matriz)
-
