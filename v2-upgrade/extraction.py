@@ -1,56 +1,5 @@
 import os
 
-def leer_datos(Casos_matriz):
-    '''
-    Muestra cada linea del archivo "Bogota_covid19.csv" organizado por numero de caso.
-    :param list Casos_matriz: Matriz con los casos.
-    Retorna para volver al menu.
-    '''
-
-    #Indica la opcion seleccionada.
-    print("\nEscogio la opcion de leer datos.")
-
-    #Permite volver al menu principal.
-    if volver_al_menu():
-        return
-    
-    #Inicializa un diccionario.
-    Casos = {"Numero de caso": Casos_matriz[0]}
-    
-    #Actualiza el diccionario.
-    for caso in range(1, len(Casos_matriz)):
-        #Al diccionario "Casos" le agrega una llave "Caso x", donde x es el numero del caso.
-        #Agrega cada caso como lista a Casos["Caso x"].
-        Casos["Caso {}".format(caso)] = Casos_matriz[caso]
-        
-    #Inicializa una lista.
-    Categorias_lens = []
-
-    #Mira la string mas larga en cada categoria.
-    for categoria in range(len(Casos_matriz[0])):
-        Lista_temporal = []
-        for caso in range(len(Casos_matriz)):
-            Lista_temporal.append(len(Casos_matriz[caso][categoria]))
-        Categorias_lens.append(max(Lista_temporal))
-        
-    #Imprime el encabezado de la primera columna.
-    print("\nNumero de caso", end="\t")
-    
-    #Imprime el resto del encabezado y una linea vacia.
-    for categoria in range(len(Casos["Numero de caso"])):
-        print("{:<{}}".format(Casos["Numero de caso"][categoria], Categorias_lens[categoria]), end="\t")
-    print()
-    
-    #Imprime el numero de caso (llave del diccionario) y sus caracteristicas (valor respectivo).
-    #El Categorias_lens es usado como identacion para que se vea organizado.
-    for caso in range(1, len(Casos)):
-        print("\n{:^14}".format(caso), end="\t")
-        for categoria in range(len(Casos["Caso {}".format(caso)])):
-            print("{:<{}}".format(Casos["Caso {}".format(caso)][categoria], Categorias_lens[categoria]), end="\t")
-
-    #Permite que el operador decida cuando volver al menu.
-    input("\n\nPresione enter para volver al menu: ")
-
 def casos_archivo():
     '''
     Organiza los casos del archivo en una matriz.

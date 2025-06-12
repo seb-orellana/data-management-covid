@@ -1,5 +1,37 @@
-from extraction import volver_al_menu, try_opcion, casos_archivo, leer_datos
+from extraction import volver_al_menu, try_opcion, casos_archivo
 import os
+import csv
+from tkinter import Toplevel, Scrollbar
+from tkinter.ttk import Treeview
+import pandas as pd
+
+def leer_datos(data):
+    """
+    Abre una ventana con todos los datos cargados desde el CSV.
+    """
+    # Create popup window
+    ventana = Toplevel()
+    ventana.title("Datos del archivo")
+
+    tree = Treeview(ventana)
+    tree.pack(side="left", fill="both", expand=True)
+
+    # Add vertical scrollbar
+    vsb = Scrollbar(ventana, orient="vertical", command=tree.yview)
+    vsb.pack(side="right", fill="y")
+    tree.configure(yscrollcommand=vsb.set)
+
+    # Define columns
+    tree["columns"] = list(data.columns)
+    tree["show"] = "headings"
+
+    for col in data.columns:
+        tree.heading(col, text=col)
+        tree.column(col, width=100, anchor="w")
+
+    # Insert data rows
+    for _, row in data.iterrows():
+        tree.insert("", "end", values=list(row))
 
 #Define la funcion localidad_diccionario()
 def localidad_diccionario(Casos):
@@ -624,9 +656,13 @@ def opciones(opcion, csv_path):
     '''
     Casos_matriz = casos_archivo()
 
+    # Read CSV with pandas
+    print(csv_path)
+    data = pd.read_csv(csv_path)
+
     #Condicionales de acuerdo a la opcion escogida, ejecuta funciones diferentes.
     if opcion == 1:
-        leer_datos(Casos_matriz)
+        leer_datos(data)
 
     elif opcion == 2: 
         menu_localidades(Casos_matriz)
