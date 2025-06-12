@@ -1,4 +1,4 @@
-v2-upgrade\__pycache__
-v2-upgrade\data\estadisticas_caso.csv
-v2-upgrade\data\estadisticas_generales.csv
+v2-upgrade/__pycache__
 future_upgrades.txt
+v2-upgrade/data/estadisticas_caso.csv
+v2-upgrade/data/estadisticas_generales.csv
