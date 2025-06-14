@@ -1,5 +1,4 @@
 from functions import opciones
-from extraction import try_opcion
 from file_utils import get_data_path, check_file_exists
 from gui import launch_gui
 

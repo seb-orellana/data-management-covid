@@ -529,7 +529,7 @@ def descargar_estadisticas_caso(Casos_matriz):
         diccionario[llave] = [str(valor) for valor in diccionario[llave]]
 
     #Se crea el archivo "estadisticas_caso.csv" en la carpeta "archivos".
-    Archivo_estadisticas_caso = open("archivos/estadisticas_caso.csv", "w")
+    Archivo_estadisticas_caso = open("v1-original/archivos/estadisticas_caso.csv", "w")
         
     #Indica el separador y lo escribe en el archivo.
     Archivo_estadisticas_caso.write("sep=,\n")
@@ -633,7 +633,7 @@ def descargar_estadisticas(Casos_matriz):
         diccionario[localidad] = [str(round(valor*100/localidades_totales[localidad], 2)) + "%" for valor in diccionario[localidad]]
 
     #Crea un archivo en la carpeta archivos con nombre "estadisticas_generales.csv".
-    Archivo = open("archivos/estadisticas_generales.csv", "w")
+    Archivo = open("v1-original/archivos/estadisticas_generales.csv", "w")
 
     #Escribe el seperador.
     Archivo.write("sep=,\n")
@@ -778,7 +778,7 @@ def casos_archivo():
     :return list Casos_matriz: Matriz con los casos de covid19.
     '''
     #Abre el archivo y guarda los casos en una lista.
-    Archivo_covid19 = open("archivos/Bogota_covid19.csv", "r")
+    Archivo_covid19 = open("v1-original/archivos/Bogota_covid19.csv", "r")
     Casos_lista = Archivo_covid19.readlines()
     Archivo_covid19.close()
 
@@ -797,7 +797,7 @@ def try_archivo():
     '''
     #Intenta abrir el archivo, si puede, retorna True, si no, retorna False.
     try:
-        Archivo = open("archivos/Bogota_covid19.csv", "r")
+        Archivo = open("v1-original/archivos/Bogota_covid19.csv", "r")
         Archivo.close()
         return True
     

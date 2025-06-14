@@ -1,7 +1,6 @@
 import tkinter as tk
 from tkinter import ttk, messagebox
 from functions import opciones
-from file_utils import get_data_path
 
 class Menu:
     def __init__(self, root, csv_path):

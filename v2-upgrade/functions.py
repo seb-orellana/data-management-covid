@@ -1,6 +1,4 @@
-from extraction import volver_al_menu, try_opcion, casos_archivo
-import os
-import csv
+from pathlib import Path
 from tkinter.ttk import Treeview
 import pandas as pd
 import tkinter as tk
@@ -255,206 +253,147 @@ def menor_contagio_popup(data):
     for localidad, contagios in contagios_por_localidad.items():
         ttk.Label(popup, text=f"{localidad:<20}: {contagios} casos", font=("Arial", 12)).pack()
 
-#Define la funcion descargar_estadisticas_caso()
-def descargar_estadisticas_caso(Casos_matriz):
+def descargar_estadisticas_caso_popup(data):
     '''
-    Crea un archivo con el nombre "estadisticas_caso.csv" que contiene datos por localidad y sexo.
-    :param list Casos_matriz: Matriz con los casos.
-    No retorna a menos que sea para volver al menu.
+    Genera un archivo CSV "estadisticas_caso.csv" con casos desglosados por localidad, sexo y tipo de caso.
+    Utiliza pandas y muestra un popup al finalizar.
     '''
 
-    #Indica la opcion seleccionada.
-    print("\nEscogio la opcion de descargar estadisticas por caso.")
+    tipos_caso = sorted(data["Tipo de caso"].unique())
+    localidades = sorted(data["Localidad de residencia"].unique())
 
-    #Permite volver al menu principal.
-    if volver_al_menu():
-        return
+    # Columnas para el DataFrame de salida
+    columnas = (
+        [f"F_{t}" for t in tipos_caso] + ["F_Total"] +
+        [f"M_{t}" for t in tipos_caso] + ["M_Total", "Total"]
+    )
 
-    #Elimina la primera linea de la matriz.
-    del Casos_matriz[0]
+    resultados = {}
 
-    #Crea una lista con las localidades organizadas alfabeticamente.
-    localidades = list(set([caso[2] for caso in Casos_matriz]))
-    localidades.sort()
+    for loc in localidades:
+        data_loc = data[data["Localidad de residencia"] == loc]
+        total = len(data_loc)
 
-    #Crea una lista con los tipos de caso organizados alfabeticamente.
-    tipos_de_caso = list(set([caso[5] for caso in Casos_matriz]))
-    tipos_de_caso.sort()
+        # Femenino
+        data_f = data_loc[data_loc["Sexo"] == "F"]
+        f_total = len(data_f)
+        f_tipos = [(data_f["Tipo de caso"] == tipo).sum() for tipo in tipos_caso]
 
-    #Crea una variable.
-    categoria = tipos_de_caso + ["F Total"] + tipos_de_caso + ["M Total"] + ["Total"]
+        # Masculino
+        data_m = data_loc[data_loc["Sexo"] == "M"]
+        m_total = len(data_m)
+        m_tipos = [(data_m["Tipo de caso"] == tipo).sum() for tipo in tipos_caso]
 
-    #Crea un diccionario.
-    diccionario = {"Localidad": categoria}
+        row = f_tipos + [f_total] + m_tipos + [m_total, total]
+        resultados[loc] = row
 
-    #Agrega las localidades como llaves al diccionario.
+    # Crear DataFrame final
+    output_data = pd.DataFrame.from_dict(resultados, orient='index', columns=columnas)
+    output_data.reset_index(inplace=True)
+    output_data.rename(columns={'index': 'Localidad'}, inplace=True)
+
+    # Guardar archivo
+    output_dir = Path(__file__).resolve().parent / "data"
+    output_dir.mkdir(parents=True, exist_ok=True)
+    file_path = output_dir / "estadisticas_caso.csv"
+
+    with open(file_path, "w", encoding="utf-8", newline='') as f:
+        f.write("sep=,\n")
+        output_data.to_csv(f, index=False)
+
+    # Popup de confirmación
+    root = tk.Tk()
+    root.withdraw()
+    messagebox.showinfo(
+        "Archivo generado",
+        f"El archivo 'estadisticas_caso.csv' fue creado exitosamente en:\n{file_path}"
+    )
+
+def descargar_estadisticas_popup(data):
+    '''
+    Genera un archivo CSV con estadísticas generales transpuesta y bien formateada.
+    Muestra un popup con la ruta del archivo guardado.
+    :param DataFrame data: DataFrame con los casos.
+    '''
+
+    # Define categorías
+    ubicaciones = sorted(data["Ubicacion"].unique())
+    tipos_casos = sorted(data["Tipo de caso"].unique())
+    sexos = sorted(data["Sexo"].unique())
+    edades = ["Niños", "Adolescentes", "Adultos"]
+
+    columnas = ubicaciones + tipos_casos + sexos + edades
+
+    # Diccionario para acumular resultados por localidad
+    localidades = sorted(data["Localidad de residencia"].unique())
+    data_dict = {}
+
     for localidad in localidades:
-        diccionario[localidad] = [0 for tipo_de_caso in categoria]
+        data_loc = data[data["Localidad de residencia"] == localidad]
+        total = len(data_loc)
+        fila = []
 
-    #Actualiza el diccionario.
-    for caso in Casos_matriz:
-        diccionario[caso[2]][len(diccionario[caso[2]]) - 1] += 1
+        # Por ubicación
+        for ubic in ubicaciones:
+            porcentaje = (data_loc["Ubicacion"] == ubic).sum() * 100 / total
+            fila.append(round(porcentaje, 2))
 
-        if caso[4] == "M":
-            diccionario[caso[2]][len(diccionario[caso[2]]) - 2] += 1
-            for tipo_de_caso in range(len(tipos_de_caso)):
-                if caso[5] == tipos_de_caso[tipo_de_caso]:
-                    diccionario[caso[2]][len(tipos_de_caso) + 1 + tipo_de_caso] += 1
+        # Por tipo de caso
+        for tipo in tipos_casos:
+            porcentaje = (data_loc["Tipo de caso"] == tipo).sum() * 100 / total
+            fila.append(round(porcentaje, 2))
 
-        elif caso[4] == "F":
-            diccionario[caso[2]][len(diccionario[caso[2]]) - 3 - len(tipos_de_caso)] += 1
-            for tipo_de_caso in range(len(tipos_de_caso)):
-                if caso[5] == tipos_de_caso[tipo_de_caso]:
-                    diccionario[caso[2]][tipo_de_caso] += 1
+        # Por sexo
+        for sexo in sexos:
+            porcentaje = (data_loc["Sexo"] == sexo).sum() * 100 / total
+            fila.append(round(porcentaje, 2))
 
-    #Los valores del diccionario se convierten a string.
-    for llave in diccionario.keys():
-        diccionario[llave] = [str(valor) for valor in diccionario[llave]]
+        # Por edad
+        edades_contadas = [0, 0, 0]
+        for edad in data_loc["Edad"]:
+            edad = int(edad)
+            if edad < 14:
+                edades_contadas[0] += 1
+            elif edad < 18:
+                edades_contadas[1] += 1
+            else:
+                edades_contadas[2] += 1
 
-    # Path to the directory where this .py file is located
-    current_dir = os.path.dirname(os.path.abspath(__file__))
+        for valor in edades_contadas:
+            fila.append(round(valor * 100 / total, 2))
 
-    # Build the path to the CSV file
-    csv_path = os.path.join(current_dir, "data", "estadisticas_caso.csv")
+        data_dict[localidad] = fila
 
-    #Se crea el archivo "estadisticas_caso.csv" en la carpeta "archivos".
-    Archivo_estadisticas_caso = open(csv_path, "w")
-        
-    #Indica el separador y lo escribe en el archivo.
-    Archivo_estadisticas_caso.write("sep=,\n")
+    # Convertir a DataFrame y transponer
+    output_data = pd.DataFrame.from_dict(data_dict, orient='index', columns=columnas)
 
-    #Escribe los datos en el archivo.
-    for llave in diccionario.keys():
-        Archivo_estadisticas_caso.write(llave + ",")
-        Archivo_estadisticas_caso.write(",".join(diccionario[llave]) + "\n")
+    # Asegurarse de que el índice es columna
+    output_data.reset_index(inplace=True)
+    output_data.rename(columns={'index': 'Localidad'}, inplace=True)
 
-    #Cierra el archivo.
-    Archivo_estadisticas_caso.close()
+    # Guardar como CSV con separador explícito
+    output_dir = Path(__file__).resolve().parent / "data"
+    output_dir.mkdir(parents=True, exist_ok=True)
+    file_path = output_dir / "estadisticas_generales.csv"
 
-    #Le indica el operador que se ha creado el archivo.
-    print('\nEl archivo "estadisticas_caso.csv" se ha generado correctamente en la carpeta archivos')
+    with open(file_path, "w", encoding="utf-8", newline='') as f:
+        f.write("sep=,\n")
+        output_data.to_csv(f, index=False)
 
-    #Permite que el operador decida cuando volver al menu.
-    input("\nPresione enter para volver al menu: ")
+    # Mostrar popup
+    root = tk.Tk()
+    root.withdraw()
+    messagebox.showinfo(
+        "Archivo generado",
+        f"El archivo 'estadisticas_generales.csv' fue creado exitosamente en:\n{file_path}"
+    )
 
-#Define la funcion descargar_estadisticas()
-def descargar_estadisticas(Casos_matriz):
-    '''
-    Crea un archivo de nombre "estadisticas_generales.csv" con estadisticas generales.
-    :param list Casos_matriz: Matriz con los casos.
-    No retorna a menos que sea para volver al menu.
-    '''
-
-    #Indica la opcion seleccionada.
-    print("\nEscogio la opcion de descargar estadisticas generales")
-
-    #Permite volver al menu principal.
-    if volver_al_menu():
-        return
-
-    #Elimina la primera linea.
-    del Casos_matriz[0]
-   
-    #Crea una lista con las localidades organizadas alfabeticamente.
-    localidades = list(set([caso[2] for caso in Casos_matriz]))
-    localidades.sort()
-
-    #Crea una lista con las ubicaciones organizadas alfabeticamente.
-    ubicaciones = list(set([caso[6] for caso in Casos_matriz]))
-    ubicaciones.sort()
-
-    #Crea una lista con los tipos de casos organizados alfabeticamente.
-    tipos_de_casos = list(set([caso[5] for caso in Casos_matriz]))
-    tipos_de_casos.sort()
-
-    #Crea una lista con las posibilidades de sexo.
-    Sexos = list(set([caso[4] for caso in Casos_matriz]))
-
-    #Crea una lista con cateogrias para la edad.
-    Edades = ["Niños", "Adolescentes", "Adultos"]
-
-    #Inicializa un diccionario con estadisticas generales.
-    diccionario = {"Localidad": ubicaciones + tipos_de_casos + Sexos + Edades}
-
-    #Inicializa un diccionario de localidades.
-    localidades_totales = {}
-
-    #Actualiza ambos diccionarios con las localidades como llaves, pero diferentes valores.
-    for localidad in localidades:
-        localidades_totales[localidad] = 0
-        diccionario[localidad] = [0 for categoria in diccionario["Localidad"]]
-
-    #Actualiza el diccionario de localidades.
-    for caso in Casos_matriz:
-        for localidad in localidades:
-            if caso[2] == localidad:
-                localidades_totales[localidad] += 1
-                break
-
-    #Actualiza el diccionario con estadisticas generales.
-    for caso in Casos_matriz:
-        for ubicacion in range(len(ubicaciones)):
-            if caso[6] == ubicaciones[ubicacion]:
-                diccionario[caso[2]][ubicacion] += 1
-                break
-        
-        for tipo_de_caso in range(len(tipos_de_casos)):
-            if caso[5] == tipos_de_casos[tipo_de_caso]:
-                diccionario[caso[2]][len(ubicaciones) + tipo_de_caso] += 1
-                break
-
-        for sexo in range(len(Sexos)):
-            if caso[4] == Sexos[sexo]:
-                diccionario[caso[2]][len(ubicaciones) + len(tipos_de_casos) + sexo] += 1
-                break
-
-        if int(caso[3]) < 14:
-            diccionario[caso[2]][len(diccionario[caso[2]]) - 3] += 1
-
-        elif int(caso[3]) < 18:
-            diccionario[caso[2]][len(diccionario[caso[2]]) - 2] += 1
-
-        else:
-            diccionario[caso[2]][len(diccionario[caso[2]]) - 1] += 1
-
-    #Divide los valores del diccionarios con estadisticas generales por los casos totales en esa localidad y lo multiplica por cien para obtener el porcentaje.
-    for localidad in localidades:
-        diccionario[localidad] = [str(round(valor*100/localidades_totales[localidad], 2)) + "%" for valor in diccionario[localidad]]
-
-    # Path to the directory where this .py file is located
-    current_dir = os.path.dirname(os.path.abspath(__file__))
-
-    # Build the path to the CSV file
-    csv_path = os.path.join(current_dir, "data", "estadisticas_generales.csv")
-
-    #Se crea el archivo "estadisticas_caso.csv" en la carpeta "archivos".
-    Archivo = open(csv_path, "w")
-
-    #Escribe el seperador.
-    Archivo.write("sep=,\n")
-
-    #Escribe las estadisticas generales.
-    for llave in diccionario.keys():
-        Archivo.write(llave + ",")
-        Archivo.write(",".join(diccionario[llave]) + "\n")
-
-    #Cierra el archivo.
-    Archivo.close()
-
-    #Imprime una verificacion de la creacion del archivo.
-    print('\nEl archivo "estadisticas_generales.csv" se ha creado exitosamente.')
-
-    #Permite que el operador decida cuando volver al menu.
-    input("\nPresione enter para volver al menu: ")
-
-#Define la funcion opciones()
 def opciones(opcion, csv_path):
     '''
     Ejecuta una funcion de acuerdo a la opcion que escogio el operador
     :param int opcion: el numero de la opcion que escoge el operador
     No retorna
     '''
-    Casos_matriz = casos_archivo()
 
     # Read CSV with pandas
     print(csv_path)
@@ -477,7 +416,7 @@ def opciones(opcion, csv_path):
         menor_contagio_popup(data)
 
     elif opcion == 6:
-        descargar_estadisticas_caso(Casos_matriz)
+        descargar_estadisticas_caso_popup(data)
 
     elif opcion == 7:
-        descargar_estadisticas(Casos_matriz)
+        descargar_estadisticas_popup(data)
