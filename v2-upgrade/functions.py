@@ -223,125 +223,37 @@ def rango_fecha(data):
     btn = ttk.Button(ventana, text="Mostrar resultados", command=show_results)
     btn.grid(row=2, column=0, columnspan=2, pady=5)
 
-#Define la funcion mayor_contagio()
-def mayor_contagio(Casos_matriz):
+def mayor_contagio_popup(data):
     '''
-    Imprime las tres localidades con mayor numero de contagiados y el numero de contagios
-    :param list Casos_matriz: Matriz con los casos.
-    No retorna a menos que sea para volver al menu.
+    Muestra un popup con las tres localidades con más contagios.
+    :param DataFrame data: DataFrame con los datos de casos.
     '''
+    contagios_por_localidad = data["Localidad de residencia"].value_counts().head(3)
 
-    #Indica la opcion seleccionada.
-    print("\nEscogio la opcion de ver las tres localidades con mayor contagio.")
+    popup = Toplevel()
+    popup.title("Top 3 Localidades con Mayor Contagio")
+    popup.geometry("400x200")
 
-    #Permite volver al menu principal.
-    if volver_al_menu():
-        return
+    ttk.Label(popup, text="Top 3 Localidades con Mayor Contagio", font=("Arial", 14, "bold")).pack(pady=10)
 
-    #Elimina la primera linea de la matriz.
-    del Casos_matriz[0]
+    for localidad, contagios in contagios_por_localidad.items():
+        ttk.Label(popup, text=f"{localidad:<20}: {contagios} casos", font=("Arial", 12)).pack()
 
-    #Crea una lista con las localidades y las organiza alfabeticamente.
-    localidades = list(set([caso[2] for caso in Casos_matriz]))
-    localidades.sort()
-
-    #Inicializa un diccionario.
-    localidades_diccionario = {}
-
-    #Pone las localidades como llaves.
-    for localidad in localidades:
-        localidades_diccionario[localidad] = 0
-
-    #Actualiza el diccionario.
-    for caso in Casos_matriz:
-        localidades_diccionario[caso[2]] += 1
-
-    #Inicializa una lista con los tres contagios mas altos.
-    localidades_con_mayor_contagio = [0, 0, 0]
-
-    #Actualiza la lista con los tres contagios mas altos.
-    for contagios in localidades_diccionario.values():
-        if contagios > localidades_con_mayor_contagio[0]:
-             localidades_con_mayor_contagio[0], localidades_con_mayor_contagio[1], localidades_con_mayor_contagio[2] = contagios, localidades_con_mayor_contagio[0], localidades_con_mayor_contagio[1]
-
-        elif contagios > localidades_con_mayor_contagio[1]:
-             localidades_con_mayor_contagio[1], localidades_con_mayor_contagio[2] = contagios, localidades_con_mayor_contagio[1]
-            
-        elif contagios > localidades_con_mayor_contagio[2]:
-            localidades_con_mayor_contagio[2] = contagios
-
-    #Imprime el encabezado.
-    print("\n{:<20}|{}\n".format("localidad", "contagios"))
-
-    #Busca que localidad tiene el valor de la lista con los tres contagios mas altos y la imprime.
-    for puesto in localidades_con_mayor_contagio:
-        for localidad in localidades_diccionario.keys():
-            if localidades_diccionario[localidad] == puesto:
-                print("{:<20}: {}".format(localidad, puesto)) 
-                break
-
-    #Permite que el operador decida cuando volver al menu.
-    input("\nPresione enter para volver al menu: ")
-
-#Define la funcion menor_contagio()
-def menor_contagio(Casos_matriz):
+def menor_contagio_popup(data):
     '''
-    Imprime las tres localidades con menor numero de contagiados y el numero de contagios
-    :param list Casos_matriz: Matriz con los casos.
-    No retorna a menos que sea para volver al menu.
+    Muestra un popup con las tres localidades con menos contagios.
+    :param DataFrame data: DataFrame con los datos de casos.
     '''
-    
-    #Indica la opcion seleccionada.
-    print("\nEscogio la opcion de ver las tres localidades con menor contagio.")
+    contagios_por_localidad = data["Localidad de residencia"].value_counts().tail(3)
 
-    #Permite volver al menu principal.
-    if volver_al_menu():
-        return
+    popup = Toplevel()
+    popup.title("Top 3 Localidades con Menor Contagio")
+    popup.geometry("400x200")
 
-    #Elimina la primera linea de la matriz.
-    del Casos_matriz[0]
+    ttk.Label(popup, text="Top 3 Localidades con Menor Contagio", font=("Arial", 14, "bold")).pack(pady=10)
 
-    #Crea una lista con las localidades y las organiza alfabeticamente.
-    localidades = list(set([caso[2] for caso in Casos_matriz]))
-    localidades.sort()
-
-    #Inicializa un diccionario.
-    localidades_diccionario = {}
-
-    #Pone las localidades como llaves.
-    for localidad in localidades:
-        localidades_diccionario[localidad] = 0
-
-    #Actualiza el diccionario.
-    for caso in Casos_matriz:
-        localidades_diccionario[caso[2]] += 1
-
-    #Inicializa una lista con los tres contagios mas bajos.
-    localidades_con_menor_contagio = [max(localidades_diccionario.values()), max(localidades_diccionario.values()), max(localidades_diccionario.values())]
-
-    #Actualiza la lista con los tres contagios mas bajos.
-    for contagios in localidades_diccionario.values():
-        if contagios < localidades_con_menor_contagio[0]:
-             localidades_con_menor_contagio[0], localidades_con_menor_contagio[1], localidades_con_menor_contagio[2] = contagios, localidades_con_menor_contagio[0], localidades_con_menor_contagio[1]
-
-        elif contagios < localidades_con_menor_contagio[1]:
-             localidades_con_menor_contagio[1], localidades_con_menor_contagio[2] = contagios, localidades_con_menor_contagio[1]
-            
-        elif contagios < localidades_con_menor_contagio[2]:
-            localidades_con_menor_contagio[2] = contagios
-
-    #Imprime el encabezado.
-    print("\n{:<20}|{}\n".format("localidad", "contagios"))
-
-    #Busca que localidad tiene el valor de la lista con los tres contagios mas bajos y la imprime.
-    for puesto in localidades_con_menor_contagio:
-        for localidad in localidades_diccionario.keys():
-            if localidades_diccionario[localidad] == puesto:
-                print("{:<20}: {}".format(localidad, puesto)) 
-                break
-
-    #Permite que el operador decida cuando volver al menu.
-    input("\nPresione enter para volver al menu: ")
+    for localidad, contagios in contagios_por_localidad.items():
+        ttk.Label(popup, text=f"{localidad:<20}: {contagios} casos", font=("Arial", 12)).pack()
 
 #Define la funcion descargar_estadisticas_caso()
 def descargar_estadisticas_caso(Casos_matriz):
@@ -559,10 +471,10 @@ def opciones(opcion, csv_path):
         rango_fecha(data)
 
     elif opcion == 4:
-        mayor_contagio(Casos_matriz)
+        mayor_contagio_popup(data)
 
     elif opcion == 5:
-        menor_contagio(Casos_matriz)
+        menor_contagio_popup(data)
 
     elif opcion == 6:
         descargar_estadisticas_caso(Casos_matriz)
