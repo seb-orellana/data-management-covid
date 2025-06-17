@@ -22,11 +22,16 @@ The goal of this project is to read, analyze, and extract statistics from a loca
 ### `v1-original/`
 Developed during my first year of university. It uses basic file I/O and manual data parsing techniques.
 
-### `upgraded_version/`
-A refactored and enhanced version built using current best practices:
+### `v2-upgrade/`
+A slighly better version of the original code.
+The code now uses libraries to enhance use, allowing for the creation of a GUI and a better management of the data.
+Furthermmore, the code has been separated in multiple .py to avoid the clutter of lines in a single file.
+
+There are more possible upgrades, however, there are no plans to applying them soon.
 
 ---
 
 ## 📝 Requirements
 
 Python 3.11.9 is required. Previous versions might work for the "v1-original/" version.
+libraries: tkinter, pathlib, pandas, and tkcalendar.
