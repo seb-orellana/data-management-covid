@@ -78,7 +78,7 @@ def localidad_diccionario(data_local):
 
 def estadisticas_localidad(localidad, data):
     """
-    GUI version: shows stats for a selected localidad.
+    shows stats for a selected localidad.
     """
 
     # Filter the DataFrame
@@ -179,7 +179,6 @@ def menu_localidades_gui(data):
     ttk.Button(ventana, text="Cancelar", command=ventana.destroy).pack()
 
 def rango_fecha(data):
-
     # Ensure the 'Fecha de diagnostico' column is datetime
     data["Fecha de diagnostico"] = pd.to_datetime(data["Fecha de diagnostico"], errors='coerce', dayfirst=True)
 
@@ -256,7 +255,6 @@ def menor_contagio_popup(data):
 def descargar_estadisticas_caso_popup(data):
     '''
     Genera un archivo CSV "estadisticas_caso.csv" con casos desglosados por localidad, sexo y tipo de caso.
-    Utiliza pandas y muestra un popup al finalizar.
     '''
 
     tipos_caso = sorted(data["Tipo de caso"].unique())
@@ -311,7 +309,7 @@ def descargar_estadisticas_caso_popup(data):
 
 def descargar_estadisticas_popup(data):
     '''
-    Genera un archivo CSV con estadísticas generales transpuesta y bien formateada.
+    Genera un archivo CSV con estadísticas generales
     Muestra un popup con la ruta del archivo guardado.
     :param DataFrame data: DataFrame con los casos.
     '''
@@ -394,29 +392,22 @@ def opciones(opcion, csv_path):
     :param int opcion: el numero de la opcion que escoge el operador
     No retorna
     '''
-
+    
     # Read CSV with pandas
     print(csv_path)
     data = pd.read_csv(csv_path)
 
-    #Condicionales de acuerdo a la opcion escogida, ejecuta funciones diferentes.
     if opcion == 1:
         leer_datos(data)
-
     elif opcion == 2: 
         menu_localidades_gui(data)
-
     elif opcion == 3:
         rango_fecha(data)
-
     elif opcion == 4:
         mayor_contagio_popup(data)
-
     elif opcion == 5:
         menor_contagio_popup(data)
-
     elif opcion == 6:
         descargar_estadisticas_caso_popup(data)
-
     elif opcion == 7:
         descargar_estadisticas_popup(data)

@@ -23,7 +23,7 @@ class Menu:
         ]
 
         for i, option in enumerate(options, start=1):
-            ttk.Button(root, text=f"{i}. {option}", command=lambda i=i: self.handle_option(i)).pack(padx=10, pady=4, fill='x')
+            ttk.Button(root, text=f"{option}", command=lambda i=i: self.handle_option(i)).pack(padx=10, pady=4, fill='x')
 
     def handle_option(self, option):
         if option == 8:
@@ -36,5 +36,5 @@ class Menu:
 
 def launch_gui(csv_path):
     root = tk.Tk()
-    app = Menu(root, csv_path)
+    Menu(root, csv_path)
     root.mainloop()
